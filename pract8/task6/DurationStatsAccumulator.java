@@ -19,13 +19,14 @@ final class DurationStatsAccumulator {
   }
 
   // combiner корректен для разбиения: пустая часть не меняет результат
-  void combine(DurationStatsAccumulator other) {
+  DurationStatsAccumulator combine(DurationStatsAccumulator other) {
     if (other == null) throw new IllegalArgumentException("other must not be null");
-    if (other.count == 0) return;
+    if (other.count == 0) return this;
     count += other.count;
     sum += other.sum;
     min = Math.min(min, other.min);
     max = Math.max(max, other.max);
+    return this;
   }
 
   DurationStats finish() {
