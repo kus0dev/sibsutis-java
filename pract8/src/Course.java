@@ -3,7 +3,7 @@ package src;
 import java.util.List;
 import java.util.Locale;
 
-// общая модель курса: используется во всех заданиях практики 8
+// общая модель курса: используется в заданиях 1–6
 public class Course {
   private final long id;
   private final String code;
