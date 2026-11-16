@@ -11,7 +11,9 @@
 `submit(Runnable)` возвращает `Future<?>`, у которого `get()` всегда даёт `null`.
 `submit(Callable)` возвращает `Future<V>` с настоящим результатом. Checked
 exception из `Callable` не теряется: `Future.get()` выбрасывает
-`ExecutionException`, внутри которого лежит исходная причина.
+`ExecutionException`, внутри которого лежит исходная причина. В демонстрации
+задача бросает checked `IOException`, а `get()` возвращает её внутри
+`ExecutionException`.
 
 ## Timeout и ошибка вычисления
 
