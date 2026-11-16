@@ -2,6 +2,7 @@ package task5;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import task1.SynchronizedMethodCounter;
 import task1.UnsynchronizedCounter;
 
 import java.util.concurrent.CountDownLatch;
@@ -10,6 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntSupplier;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -38,6 +40,15 @@ public class RaceTest {
 
     int lost = EXPECTED - actual;
     assertTrue(lost > 0, "race was not observed in " + ATTEMPTS + " attempts");
+  }
+
+  @Test
+  void synchronizedCounterKeepsAllUpdates() throws Exception {
+    SynchronizedMethodCounter counter = new SynchronizedMethodCounter();
+
+    int actual = runCounter(counter::increment, counter::value);
+
+    assertEquals(EXPECTED, actual);
   }
 
   private static int runCounter(Runnable increment, IntSupplier value) throws InterruptedException {
