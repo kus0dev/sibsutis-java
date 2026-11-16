@@ -21,6 +21,7 @@ public class Task5Demo {
         + Runtime.getRuntime().availableProcessors());
     System.out.println("blocking wait only: sleep is not a model of CPU work");
     run("platform", Executors.newFixedThreadPool(PLATFORM_THREADS));
+    run("virtual", Executors.newVirtualThreadPerTaskExecutor());
   }
 
   private static void run(String name, ExecutorService executor) throws Exception {
