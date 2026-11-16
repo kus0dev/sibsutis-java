@@ -24,7 +24,7 @@ public class Task3Demo {
     System.out.println("active sessions: " + registry.activeCount());
     System.out.println("owner: " + registry.find("S-1").map(Session::student).orElse("none"));
 
-    AtomicInteger nextId = new AtomicInteger(1);
+    AtomicInteger nextId = new AtomicInteger(100);
     AtomicInteger distinctCreated = new AtomicInteger();
     runConcurrently(() -> {
       int id = nextId.getAndIncrement();
