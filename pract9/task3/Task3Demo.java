@@ -15,7 +15,7 @@ public class Task3Demo {
     AtomicInteger created = new AtomicInteger();
 
     runConcurrently(() -> {
-      if (registry.create(new Session("S-1", "student-" + Thread.currentThread().getId()))) {
+      if (registry.create(new Session("S-1", "student-" + Thread.currentThread().threadId()))) {
         created.incrementAndGet();
       }
     });
@@ -26,8 +26,8 @@ public class Task3Demo {
 
     AtomicInteger distinctCreated = new AtomicInteger();
     runConcurrently(() -> {
-      String id = "S-" + Thread.currentThread().getId();
-      if (registry.create(new Session(id, "student-" + Thread.currentThread().getId()))) {
+      String id = "S-" + Thread.currentThread().threadId();
+      if (registry.create(new Session(id, "student-" + Thread.currentThread().threadId()))) {
         distinctCreated.incrementAndGet();
       }
     });
