@@ -53,6 +53,7 @@ exception из `Callable` не теряется: `Future.get()` выбрасыв
 ## Результат
 
 ```text
+  Runnable: result is void
 Runnable vs Callable:
   runnable.get() = null
   callable.get() = Callable: result is a value
