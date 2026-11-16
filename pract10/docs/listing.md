@@ -145,13 +145,13 @@ public class Task1Demo {
   }
 
   private static void runnableVsCallable(ExecutorService pool) throws Exception {
+    System.out.println("Runnable vs Callable:");
     Future<?> runnable = pool.submit(() -> System.out.println("  Runnable: result is void"));
     Object runnableResult = runnable.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
 
     Future<String> callable = pool.submit(() -> "Callable: result is a value");
     String callableResult = callable.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
 
-    System.out.println("Runnable vs Callable:");
     System.out.println("  runnable.get() = " + runnableResult);
     System.out.println("  callable.get() = " + callableResult);
   }
