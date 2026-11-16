@@ -24,10 +24,11 @@ public class Task3Demo {
     System.out.println("active sessions: " + registry.activeCount());
     System.out.println("owner: " + registry.find("S-1").map(Session::student).orElse("none"));
 
+    AtomicInteger nextId = new AtomicInteger(1);
     AtomicInteger distinctCreated = new AtomicInteger();
     runConcurrently(() -> {
-      String id = "S-" + Thread.currentThread().threadId();
-      if (registry.create(new Session(id, "student-" + Thread.currentThread().threadId()))) {
+      int id = nextId.getAndIncrement();
+      if (registry.create(new Session("S-" + id, "student-" + id))) {
         distinctCreated.incrementAndGet();
       }
     });
