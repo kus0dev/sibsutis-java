@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +34,15 @@ public class Task3Demo {
       for (int i = 0; i < ids.size(); i++) {
         System.out.println("  " + i + ": " + ids.get(i) + " -> " + courses.get(i).title());
       }
+
+      List<String> withFailure = List.of("JAVA-101", "NOPE-1", "WEB-401");
+      start = System.nanoTime();
+      try {
+        loadAllOrFail(withFailure, io);
+      } catch (CompletionException e) {
+        System.out.println("fail-fast: elapsed=" + millis(start) + "ms"
+            + ", error=" + e.getCause().getMessage());
+      }
     } finally {
       io.shutdown();
       if (!io.awaitTermination(3, TimeUnit.SECONDS)) {
@@ -52,6 +62,32 @@ public class Task3Demo {
     CompletableFuture.allOf(array).join();
 
     // allOf не хранит результаты: забираем их из исходных future по порядку
+    return order(futures);
+  }
+
+  // fail-fast по смыслу: результат завершается ошибкой сразу после первой неудачи
+  private static List<Course> loadAllOrFail(List<String> ids, ExecutorService io) {
+    List<CompletableFuture<Course>> futures = new ArrayList<>();
+    for (String id : ids) {
+      futures.add(loadAsync(id, io));
+    }
+
+    CompletableFuture<List<Course>> result = new CompletableFuture<>();
+    AtomicInteger remaining = new AtomicInteger(futures.size());
+    for (CompletableFuture<Course> future : futures) {
+      future.whenComplete((course, error) -> {
+        if (error != null) {
+          Throwable cause = error instanceof CompletionException ? error.getCause() : error;
+          result.completeExceptionally(cause);
+        } else if (remaining.decrementAndGet() == 0) {
+          result.complete(order(futures));
+        }
+      });
+    }
+    return result.join();
+  }
+
+  private static List<Course> order(List<CompletableFuture<Course>> futures) {
     List<Course> courses = new ArrayList<>();
     for (CompletableFuture<Course> future : futures) {
       courses.add(future.join());
