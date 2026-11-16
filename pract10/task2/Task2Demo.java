@@ -2,6 +2,7 @@ package task2;
 
 import src.Course;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -24,6 +25,7 @@ public class Task2Demo {
     });
     try {
       runCardChain(io);
+      runEnrollmentChain(io);
     } finally {
       io.shutdown();
       if (!io.awaitTermination(3, TimeUnit.SECONDS)) {
@@ -54,10 +56,42 @@ public class Task2Demo {
     print.join();
   }
 
+  private static void runEnrollmentChain(ExecutorService io) {
+    System.out.println("enrollment chain (caller=" + Thread.currentThread().getName() + "):");
+    CompletableFuture<User> user = CompletableFuture.supplyAsync(() -> {
+      log("supplyAsync: load user");
+      sleep(100);
+      return new User(7, "Денис");
+    }, io);
+
+    // thenCompose разворачивает вложенный future в плоский
+    CompletableFuture<List<Enrollment>> enrollments = user.thenCompose(value -> {
+      log("thenCompose: switch to enrollments");
+      return CompletableFuture.supplyAsync(() -> {
+        log("supplyAsync: load enrollments");
+        sleep(100);
+        return loadEnrollments(value.id());
+      }, io);
+    });
+
+    List<Enrollment> result = enrollments.join();
+    System.out.println("  user=" + user.join().name() + ", enrollments=" + result.size());
+    for (Enrollment enrollment : result) {
+      System.out.println("    " + enrollment.courseId() + " progress=" + enrollment.progress() + "%");
+    }
+  }
+
   private static Course loadCourse(String id) {
     Course course = CATALOG.get(id);
     if (course == null) throw new IllegalArgumentException("unknown course: " + id);
     return course;
+  }
+
+  private static List<Enrollment> loadEnrollments(long userId) {
+    if (userId != 7) throw new IllegalArgumentException("unknown user: " + userId);
+    return List.of(
+        new Enrollment(userId, "JAVA-101", 40),
+        new Enrollment(userId, "DB-301", 15));
   }
 
   private static void log(String stage) {
@@ -72,5 +106,11 @@ public class Task2Demo {
       Thread.currentThread().interrupt();
       throw new IllegalStateException("interrupted", e);
     }
+  }
+
+  record User(long id, String name) {
+  }
+
+  record Enrollment(long userId, String courseId, int progress) {
   }
 }
