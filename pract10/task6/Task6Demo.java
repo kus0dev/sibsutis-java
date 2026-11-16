@@ -1,5 +1,6 @@
 package task6;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -10,6 +11,7 @@ import java.util.concurrent.TimeoutException;
 // несколько стадий делят один deadline; перед каждой стадией считаем остаток
 public class Task6Demo {
   private static final long BUDGET_MILLIS = 600;
+  private static final long CANCEL_GRACE_MILLIS = 200;
 
   public static void main(String[] args) throws Exception {
     ExecutorService pool = Executors.newSingleThreadExecutor(
@@ -42,6 +44,7 @@ public class Task6Demo {
       return;
     }
 
+    CountDownLatch finished = new CountDownLatch(1);
     Future<String> future = pool.submit(() -> {
       try {
         Thread.sleep(workMillis);
@@ -49,6 +52,8 @@ public class Task6Demo {
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         return "interrupted";
+      } finally {
+        finished.countDown();
       }
     });
 
@@ -56,7 +61,9 @@ public class Task6Demo {
       System.out.println(name + ": " + future.get(remaining, TimeUnit.NANOSECONDS));
     } catch (TimeoutException e) {
       future.cancel(true);
-      System.out.println(name + ": timeout, cancel(true) sent");
+      // отдельный небольшой бюджет именно на завершение отмены
+      boolean stopped = finished.await(CANCEL_GRACE_MILLIS, TimeUnit.MILLISECONDS);
+      System.out.println(name + ": timeout, cancel(true), stopped=" + stopped);
     } catch (ExecutionException e) {
       System.out.println(name + ": failed: " + e.getCause().getMessage());
     }
