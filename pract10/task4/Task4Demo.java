@@ -1,8 +1,11 @@
 package task4;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -10,8 +13,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 // CPU-bound и blocking I/O нельзя держать в одном маленьком пуле
 public class Task4Demo {
   public static void main(String[] args) throws Exception {
-    System.out.println("available processors: " + Runtime.getRuntime().availableProcessors());
+    int cores = Runtime.getRuntime().availableProcessors();
+    System.out.println("available processors: " + cores);
     showStarvation();
+    showSeparatedExecutors(cores);
   }
 
   private static void showStarvation() throws Exception {
@@ -57,6 +62,55 @@ public class Task4Demo {
     } finally {
       release.countDown();
       stop(shared);
+    }
+  }
+
+  private static void showSeparatedExecutors(int cores) throws Exception {
+    System.out.println("separate executors:");
+    ExecutorService cpu = Executors.newFixedThreadPool(cores, named("cpu"));
+    ExecutorService io = Executors.newVirtualThreadPerTaskExecutor();
+    CountDownLatch blockingStarted = new CountDownLatch(100);
+    CountDownLatch release = new CountDownLatch(1);
+    CountDownLatch cpuStarted = new CountDownLatch(cores);
+    List<Future<Long>> cpuFutures = new ArrayList<>();
+    try {
+      for (int i = 0; i < 100; i++) {
+        io.submit(() -> {
+          blockingStarted.countDown();
+          await(release);
+          return null;
+        });
+      }
+      if (!blockingStarted.await(2, TimeUnit.SECONDS)) {
+        throw new IllegalStateException("blocking tasks did not start");
+      }
+
+      for (int i = 0; i < cores; i++) {
+        cpuFutures.add(cpu.submit(() -> {
+          cpuStarted.countDown();
+          long sum = 0;
+          for (int j = 0; j < 1_000_000; j++) {
+            sum += j;
+          }
+          return sum;
+        }));
+      }
+
+      boolean started = cpuStarted.await(1, TimeUnit.SECONDS);
+      System.out.println("  100 virtual I/O tasks waiting, cpu tasks started: " + started);
+      if (!started) {
+        throw new AssertionError("cpu tasks starved");
+      }
+
+      long total = 0;
+      for (Future<Long> future : cpuFutures) {
+        total += future.get(2, TimeUnit.SECONDS);
+      }
+      System.out.println("  cpu total=" + total);
+    } finally {
+      release.countDown();
+      stop(io);
+      stop(cpu);
     }
   }
 
