@@ -35,7 +35,7 @@ public class Task4Demo {
     for (int i = 0; i < PRODUCERS; i++) {
       int index = i;
       producers.add(new Thread(
-          new Producer("producer-" + (i + 1), queue, PER_PRODUCER, (long) index * PER_PRODUCER),
+          new Producer(queue, PER_PRODUCER, (long) index * PER_PRODUCER),
           "producer-" + (i + 1)));
     }
     for (int i = 0; i < CONSUMERS; i++) {
@@ -83,7 +83,7 @@ public class Task4Demo {
       for (int i = 0; i < PRODUCERS; i++) {
         int index = i;
         producerFutures.add(pool.submit(
-            new Producer("producer-" + (i + 1), queue, PER_PRODUCER, (long) index * PER_PRODUCER)));
+            new Producer(queue, PER_PRODUCER, (long) index * PER_PRODUCER)));
       }
       for (int i = 0; i < CONSUMERS; i++) {
         consumerFutures.add(pool.submit(new Consumer(queue, processed)));
