@@ -110,6 +110,7 @@ public class InterruptibleTask implements Callable<String> {
 ```java
 package task1;
 
+import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -174,7 +175,7 @@ public class Task1Demo {
     }
 
     Future<String> broken = pool.submit(() -> {
-      throw new IllegalStateException("catalog is unavailable");
+      throw new IOException("catalog is unavailable");
     });
     try {
       broken.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);

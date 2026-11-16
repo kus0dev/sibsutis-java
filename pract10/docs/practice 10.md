@@ -88,7 +88,7 @@ checked exception. Добавьте timeout к `Future.get`. Различайт�
 3. Отправить задачу, которая спит две секунды, и подождать её 200 мс. Получить
    `TimeoutException` и убедиться, что задача ещё работает (`isDone() == false`).
 4. Отменить долгую задачу через `cancel(true)`.
-5. Отправить задачу, которая сразу бросает `IllegalStateException`, и показать
+5. Отправить задачу, которая сразу бросает checked `IOException`, и показать
    `ExecutionException` с исходной причиной.
 6. Создать `InterruptibleTask`, дождаться её старта, отменить и дождаться
    фактического завершения. Проверить, что ресурс закрыт.
@@ -173,7 +173,7 @@ cancellation:
 
 `Runnable` не возвращает результат, поэтому `Future<?>.get()` даёт `null`.
 `Callable` возвращает строку. Таймаут не означает ошибку: задача продолжала
-работать. `ExecutionException` содержит исходное `IllegalStateException`.
+работать. `ExecutionException` содержит исходное checked-исключение `IOException`.
 После `cancel(true)` задача получила interruption, закрыла ресурс в `finally` и
 завершилась; пул освобождён.
 
