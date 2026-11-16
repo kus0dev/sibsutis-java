@@ -43,6 +43,18 @@ public class Task3Demo {
         System.out.println("fail-fast: elapsed=" + millis(start) + "ms"
             + ", error=" + e.getCause().getMessage());
       }
+
+      start = System.nanoTime();
+      PartialResult partial = loadPartial(withFailure, io);
+      System.out.println("partial: elapsed=" + millis(start) + "ms"
+          + ", courses=" + partial.courses().size()
+          + ", errors=" + partial.errors().size());
+      for (Course course : partial.courses()) {
+        System.out.println("  ok: " + course.id());
+      }
+      for (String error : partial.errors()) {
+        System.out.println("  error: " + error);
+      }
     } finally {
       io.shutdown();
       if (!io.awaitTermination(3, TimeUnit.SECONDS)) {
@@ -87,6 +99,29 @@ public class Task3Demo {
     return result.join();
   }
 
+  // частичный результат: ждём все задачи и отдельно собираем ошибки
+  private static PartialResult loadPartial(List<String> ids, ExecutorService io) {
+    List<CompletableFuture<Course>> futures = new ArrayList<>();
+    for (String id : ids) {
+      futures.add(loadAsync(id, io));
+    }
+
+    CompletableFuture<?>[] array = futures.toArray(new CompletableFuture<?>[0]);
+    // handle не даёт allOf завершиться исключительно: дожидаемся всех задач
+    CompletableFuture.allOf(array).handle((value, error) -> null).join();
+
+    List<Course> courses = new ArrayList<>();
+    List<String> errors = new ArrayList<>();
+    for (int i = 0; i < ids.size(); i++) {
+      try {
+        courses.add(futures.get(i).join());
+      } catch (CompletionException e) {
+        errors.add(ids.get(i) + ": " + e.getCause().getMessage());
+      }
+    }
+    return new PartialResult(courses, errors);
+  }
+
   private static List<Course> order(List<CompletableFuture<Course>> futures) {
     List<Course> courses = new ArrayList<>();
     for (CompletableFuture<Course> future : futures) {
@@ -116,5 +151,8 @@ public class Task3Demo {
 
   private static long millis(long start) {
     return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+  }
+
+  record PartialResult(List<Course> courses, List<String> errors) {
   }
 }
